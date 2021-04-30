@@ -1,0 +1,78 @@
+﻿{
+"zonas": {
+"zona": [
+{
+"id": "1",
+"nombre": "Plaza Vieja",
+"imagen": "zonas/1.png",
+"imagen_fondo_pagina": {
+},
+"imagen_plano_actual": {
+},
+"imagen_pergamino": {
+},
+"parcelas": {
+"parcela": {
+"id": {
+},
+"imagen": {
+},
+"anyo_inicio": {
+},
+"anyo_fin": {
+},
+"nombre": {
+},
+"descripcion": {
+},
+"multimedias": {
+"multimedia": {
+"-tipo": "",
+"titulo": {
+},
+"url": {
+}
+}
+}
+}
+}
+},
+{
+"id": "2",
+"nombre": "Puerta Purchena",
+"imagen": "zonas/2.png",
+"imagen_fondo_pagina": {
+},
+"imagen_plano_actual": {
+},
+"imagen_pergamino": {
+},
+"parcelas": {
+"parcela": {
+"id": {
+},
+"imagen": {
+},
+"anyo_inicio": {
+},
+"anyo_fin": {
+},
+"nombre": {
+},
+"descripcion": {
+},
+"multimedias": {
+"multimedia": {
+"-tipo": "",
+"titulo": {
+},
+"url": {
+}
+}
+}
+}
+}
+}
+]
+}
+}
