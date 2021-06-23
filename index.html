@@ -14,79 +14,718 @@
         <link rel="stylesheet" href="resources/css/light-box.css">
         <link rel="stylesheet" href="resources/css/templatemo-style.css">
         <link rel="stylesheet" href="config/zonas.xml">
+        <link rel="stylesheet" href="resources/css/styles.css">
 
         <link href="resources/css/fuentes.css" rel="stylesheet">
 
         <script src="resources/js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
         <script src="resources/js/jquery-3.5.1.min.js"></script>
+        <script src="resources/js/jquery-ui.min.js"></script>
+        <meta charset="UTF-8">
+        <script src="zonas.js"></script>
     </head>
-
-    <script id="zonasFile">
-        <zonas>
-	
-	        <zona>
-		        <id>1</id>
-		        <nombre>Plaza Vieja</nombre>
-		        <imagen>zonas/1.png</imagen>
-		        <imagen_fondo_pagina></imagen_fondo_pagina>
-		        <imagen_plano_actual></imagen_plano_actual>
-		        <imagen_pergamino></imagen_pergamino>
-		
-		        <parcelas>
-			        <parcela>
-				        <id></id>
-				        <imagen></imagen>
-				        <anyo_inicio></anyo_inicio>
-				        <anyo_fin></anyo_fin>
-				        <nombre></nombre>
-				        <descripcion></descripcion>
-				        <multimedias>
-					        <multimedia tipo="">
-						        <titulo></titulo>
-						        <url></url>
-					        </multimedia>
-				        </multimedias>
-			        </parcela>
-		        </parcelas>
-		
-	        </zona>
-
-	        <zona>
-		        <id>2</id>
-		        <nombre>Puerta Purchena</nombre>
-		        <imagen>zonas/2.png</imagen>
-		        <imagen_fondo_pagina></imagen_fondo_pagina>
-		        <imagen_plano_actual></imagen_plano_actual>
-		        <imagen_pergamino></imagen_pergamino>
-
-		        <parcelas>
-			        <parcela>
-				        <id></id>
-				        <imagen></imagen>
-				        <anyo_inicio></anyo_inicio>
-				        <anyo_fin></anyo_fin>
-				        <nombre></nombre>
-				        <descripcion></descripcion>
-				        <multimedias>
-					        <multimedia tipo="">
-						        <titulo></titulo>
-						        <url></url>
-					        </multimedia>
-				        </multimedias>
-			        </parcela>
-		        </parcelas>
-
-	        </zona>
-	
-        </zonas>
+    
+    <script>
+    
+        function ignoreError() {
+        return true;
+        }
+    
+        window.onerror=ignoreError();
+        
     </script>
 
-     <script>
+    <div style="display:none" id="zonasFile">
         
-        parser = new DOMParser();
-        xml = parser.parseFromString(document.getElementById("zonasFile").innerHTML,"text/xml");
+        </div>
+    
+    <script>
 
-        console.log(xml.getElementsByTagName("zona")[0].getElementsByTagName("nombre")[0].innerHTML)
+            var parcelas = [];
+            var multimedias = [];
+            var contador = 0;
+            var anyo_minimo = Number.MAX_VALUE;
+            var anyo_maximo = Number.MIN_VALUE;
+            var botonAudio;
+            var botonVideo;
+            var botonImagen;
+            var oculto = true; //Es la variable que controla si el plano que se muestra en el fondo está oculto o no
+            var parcelasOcultas = false; //Es la variable que controla si las parcelas que se muestran están ocultas o no
+            var contadorZoom = 1;
+            var moviendoMapa;
+            var peli;
+            var nombre;
+            var parser;
+            var xml;
+            
+        $(document).ready(function() {
+           
+            
+            parser = new DOMParser();
+            xml = parser.parseFromString(documentoXML,"text/xml");
+            
+            var zonas = xml.getElementsByTagName("zona")
+            var cont = document.getElementById("container-zonas")
+            
+            for (var i=0; i<zonas.length; i++) {
+                var zona = zonas[i];
+                $("#container-zonas").html($("#container-zonas").html() + 
+                "<div class='col-md-4 col-sm-6'>" +
+                    "<div class='portfolio-item'>" + 
+                        "<a onclick='cargarZona("+zona.getElementsByTagName("id")[0].innerHTML+")'>" +
+                            "<div class='thumb'>" + 
+                                "<div class='hover-effect'>" + 
+                                    "<div class='hover-content'>" + 
+                                        "<h1>"+zona.getElementsByTagName('nombre')[0].innerHTML+"</h1>" +
+                                    "</div>" +
+                                    "</div>"+
+                                "<div class='image'>" + 
+                                "<img src='config/"+zona.getElementsByTagName("imagen")[0].innerHTML+"' style='object-fit: cover;height:600px'>" +
+                                "</div>"+
+                            "</div>"+
+                        "</a>"+
+                    "</div>"+
+                "</div>");
+            }
+        });
+        
+        function cargarZona(id) {
+            $("#pantalla-principal").hide();
+            $("#pantalla-zonas").show();
+            window.scrollTo(0,0);
+            
+            parcelas = []
+            
+            parser = new DOMParser();
+            xml = parser.parseFromString(documentoXML,"text/xml");
+            
+            
+            var zona = Array.prototype.slice.call( xml.getElementsByTagName("zona") ).filter(zona => zona.getElementsByTagName("id")[0].innerHTML == id)[0]
+
+            $("#tituloNav").html(zona.getElementsByTagName("nombre")[0].innerHTML);
+            document.getElementById("tituloNav").removeAttribute("href");
+            
+            var parcelasHTML = zona.getElementsByTagName("parcelas")[0].getElementsByTagName("parcela")
+        
+            
+            
+            Array.prototype.slice.call(parcelasHTML).forEach(function(parcela) {
+            
+             /*var prc = "parcela" + parcela.getElementsByTagName("id")[0].innerHTML + " = new Object();"+
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML +".id = " + parcela.getElementsByTagName("id")[0].innerHTML + ";" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML +".nombre = '" + parcela.getElementsByTagName("nombre")[0].innerHTML + "';" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML +".descripcion = '" + parcela.getElementsByTagName("descripcion")[0].innerHTML + "';" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML +".anyo_inicio = " + parcela.getElementsByTagName("anyo_inicio")[0].innerHTML + ";" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML +".anyo_fin = " + parcela.getElementsByTagName("anyo_fin")[0].innerHTML + ";" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML +".imagen = new Image();" + 
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML + ".imagen.src = '" + parcela.getElementsByTagName("imagen")[0].innerHTML + "';" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML + ".canvas = document.createElement('canvas');" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML + ".ctx = parcela" + parcela.getElementsByTagName("id")[0].innerHTML + ".canvas.getContext('2d');" +
+                            "parcela"+parcela.getElementsByTagName("id")[0].innerHTML + ".multimedia = []";*/                
+            
+                var prc = new Object()
+                
+                prc.id = parcela.getElementsByTagName("id")[0].innerHTML;
+                prc.nombre = parcela.getElementsByTagName("nombre")[0].innerHTML;
+                prc.descripcion = parcela.getElementsByTagName("descripcion")[0].innerHTML;
+                prc.anyo_inicio = parcela.getElementsByTagName("anyo_inicio")[0].innerHTML;
+                prc.anyo_fin = parcela.getElementsByTagName("anyo_fin")[0].innerHTML;
+                prc.imagen = new Image();
+                prc.imagen.src = "config/"+parcela.getElementsByTagName("imagen")[0].innerHTML;
+                prc.canvas = document.createElement("canvas");
+                prc.ctx = prc.canvas.getContext("2d");
+                prc.multimedia = [];
+                
+                var multimediasParcelaHTML = parcela.getElementsByTagName("multimedia")
+                
+                Array.prototype.slice.call(multimediasParcelaHTML).forEach(function(multimedia) {
+                
+                    var multi = new Object()
+                    
+                    /******************************************************* FALTA AÑADIR PDF *************************************************************/
+                    switch (multimedia.getElementsByTagName("tipo")[0].innerHTML) {
+                        case "imagen":
+                            multi.url = document.createElement("img");
+                        break;
+                        case "audio":
+                            multi.url = document.createElement("audio");
+                        break;
+                        case "video":
+                            multi.url = document.createElement("video");
+                        break;
+                        case "documento":
+                            multi.url = document.createElement("a");
+                            multi.url.setAttribute("href", multimedia.getElementsByTagName("url")[0].innerHTML);
+                            multi.url.innerHTML =  multimedia.getElementsByTagName("titulo")[0].innerHTML
+                        break;
+                        default:
+                            multi.url = document.createElement("img");
+                    }
+                    
+                    multi.url.setAttribute("src", multimedia.getElementsByTagName("url")[0].innerHTML);
+                    multi.titulo =  multimedia.getElementsByTagName("titulo")[0].innerHTML;
+                    multi.tipo = multimedia.getElementsByTagName("tipo")[0].innerHTML;
+                    
+                    prc.multimedia.push(multi)
+                
+                })
+                
+                parcelas.push(prc)
+                
+                
+            })
+            
+                
+                setTimeout(function() {
+                        $(".fondoLogo").slideUp(200);
+                },2500)
+
+                setTimeout(function() {
+                        $("body").css("overflow-y","scroll");
+                },2700)
+                
+                //Con este bucle, creamos un objeto parcela por cada etiqueta "parcela" del archivo XML
+                
+        
+              
+                
+                for (i=0; i<parcelas.length; i++) {
+                        if (parcelas[i].anyo_inicio < anyo_minimo)
+                            anyo_minimo = parcelas[i].anyo_inicio;
+                        if (parcelas[i].anyo_fin > anyo_maximo)
+                            anyo_maximo = parcelas[i].anyo_fin;
+                }
+
+                for (let i = 0; i < parcelas.length; i++) {
+                    for (let j = 0; j < multimedias.length; j++) {
+                        if (parcelas[i].id == multimedias[j].parcela_id) {
+                            parcelas[i].multimedia.push(multimedias[j])
+                        }
+                    }
+                }
+        
+                $('#sliderAnyos').attr('min',anyo_minimo);
+                $('#sliderAnyos').attr('max',anyo_maximo);
+                $('#sliderAnyos').attr('value',anyo_maximo);
+                
+                //Dibujamos la imagen de fondo del canvas (el plano actual)
+                var fondo = document.createElement("img");
+                fondo.setAttribute("class","zona");
+                fondo.setAttribute("style","opacity: 0; transition: 0.5s all");
+                fondo.setAttribute("src","config/"+zona.getElementsByTagName("imagen_fondo_pagina")[0].innerHTML);
+                fondo.setAttribute("id","fondoCanvas");
+                document.getElementById("aquiVanLosCanvas").appendChild(fondo);
+
+                setTimeout(function() {
+                        mapear($("#sliderAnyos").attr("min"));
+                        $("#sliderAnyos").val($("#sliderAnyos").attr("min"));
+                },1000)
+
+                setTimeout(function() {
+                        mapear($("#sliderAnyos").attr("max"));
+                        $("#sliderAnyos").val($("#sliderAnyos").attr("max"));
+                },2000)
+        
+                $("#anyoMaximoLabel").html(anyo_maximo);
+                $("#anyoMinimoLabel").html(anyo_minimo);
+                //Función que dibuja los canvas en función del año seleccionado, el cual se le pasa como parámetro.
+                
+        
+        
+                // Función encargada de saber si el click se ha hecho en un canvas o en otro.
+                    botonAudio = document.getElementById('audio');
+                    botonVideo = document.getElementById('video');
+                    botonImagen = document.getElementById('imagen');
+
+
+
+
+                // MOVIMIENTO POR EL MAPA CUANDO HAY ZOOM APLICADO
+                        var canvasHeight;
+                        var canvasWidth;
+
+                        setTimeout(function() {
+                            canvasHeight = $('#padreAquiVanLosCanvas').height();
+                            canvasWidth = $('#padreAquiVanLosCanvas').width();
+                            $('#aquiVanLosCanvas').css("width",canvasWidth);
+                            $('#aquiVanLosCanvas').css("height",canvasHeight);
+                        },1000)
+                        
+
+                        $('#aquiVanLosCanvas').draggable({
+                        start: function() {
+                            $("#ultCanvas").attr("onclick","")
+                        },
+                        drag: function(evt,ui)
+                        {
+                            $("#popup").slideUp(150);
+                            var cosoDentroWidth = $(this).width()
+                            var cosoDentroHeight = $(this).height()
+                            
+                            console.log(cosoDentroWidth + " x " + cosoDentroHeight)
+                            if (ui.position.left < 0) {
+                                if (cosoDentroWidth <= canvasWidth) {
+                                    console.log("cumpliendo a")
+                                    ui.position.left = 0;	
+                                } else if (ui.position.left < -(cosoDentroWidth - canvasWidth)) {
+                                    console.log("cumpliendo b")
+                                    ui.position.left = -(cosoDentroWidth - canvasWidth);
+                                }
+                            } else if (ui.position.left+(cosoDentroWidth/2)>0) {
+                                console.log("cumpliendo d")
+                                ui.position.left = 0;	
+                            }
+                            
+                            
+                            if (ui.position.top < 0) {
+                                if (cosoDentroHeight <= canvasHeight) {
+                                    ui.position.top = 0;	
+                                } else if (ui.position.top < -(cosoDentroHeight - canvasHeight)) {
+                                    ui.position.top = -(cosoDentroHeight - canvasHeight);
+                                }
+                            } else {
+                                ui.position.top = 0;	
+                            }
+
+                        }, stop: function() {
+                            setTimeout(function() {
+                                $("#ultCanvas").attr("onclick","verificarClick(event)")
+                            },100)
+                        }      
+                        });
+
+                $("#velocidadesPelicula").click(function() {
+                    velocidad-=50;
+                    if (velocidad == 50)
+                        velocidad = 25;
+                    if (velocidad <= 0)
+                        velocidad = 150;
+                    
+                    switch(velocidad) {
+                        case 150:
+                            $("#velocidadesPelicula").text("x1");
+                        break;
+                        case 100:
+                            $("#velocidadesPelicula").text("x2");
+                        break;
+                        case 25:
+                            $("#velocidadesPelicula").text("x4");
+                        break;
+                    }
+                    
+        })
+        }
+        
+        function mapear(anyo_seleccionado)  {
+            
+                var anyosPosibles = anyo_maximo - anyo_minimo;
+                var porcentaje = 100 - ((anyo_maximo - anyo_seleccionado) * 100 / anyosPosibles);
+
+                $("#anyoSlider").css("left",porcentaje+"%")
+
+                $("#popup").slideUp(150);
+                if (contador>0) {
+                        $('#ultCanvas').remove();
+                }
+                        
+                $('#anyoSlider').html(anyo_seleccionado);
+                contador++;
+
+                
+
+                for (let i=0; i<parcelas.length; i++) 
+                {
+                        parcelas[i].canvas.style.opacity = "0";
+                        //parcelas[i].ctx.clearRect(0, 0, parcelas[i].canvas.width, parcelas[i].canvas.height);
+
+                        if ((anyo_seleccionado > parcelas[i].anyo_inicio && anyo_seleccionado <= parcelas[i].anyo_fin) || (parcelas[i].anyo_inicio == anyo_minimo && anyo_seleccionado == anyo_minimo)) 
+                        {
+                            parcelas[i].canvas.setAttribute("class","zona");
+                            parcelas[i].canvas.setAttribute("id","canvas"+anyo_seleccionado + "_" +i);
+                            parcelas[i].canvas.setAttribute("data-numeroMapa",""+contador);
+                            parcelas[i].canvas.setAttribute("data-nombre",""+parcelas[i].nombre);
+
+                            if (contadorZoom > 1) {
+                                parcelas[i].canvas.width = parcelas[i].imagen.width*contadorZoom;
+                                parcelas[i].canvas.height = parcelas[i].imagen.height*contadorZoom;
+                                parcelas[i].ctx.drawImage(parcelas[i].imagen,0,0,contadorZoom*parcelas[i].imagen.width,contadorZoom*parcelas[i].imagen.height);
+                            } else {
+                                parcelas[i].canvas.width = parcelas[i].imagen.width;
+                                parcelas[i].canvas.height = parcelas[i].imagen.height;
+                                parcelas[i].ctx.drawImage(parcelas[i].imagen,0,0);
+                                
+                            }
+
+                            document.getElementById("aquiVanLosCanvas").appendChild(parcelas[i].canvas);
+                            parcelas[i].canvas.style.opacity = "1";
+                        }
+                }
+
+                var ultCanvas = document.createElement("canvas");
+                ultCanvas.setAttribute("class","zona");
+                ultCanvas.setAttribute("id","ultCanvas");
+                ultCanvas.setAttribute("onclick","verificarClick(event)");
+                ultCanvas.width = parcelas[0].imagen.width*contadorZoom;
+                ultCanvas.height = parcelas[0].imagen.height*contadorZoom;
+                document.getElementById("aquiVanLosCanvas").appendChild(ultCanvas);
+                
+                $(".pergamino").css("width",parcelas[0].imagen.width+400)
+                $(".pergamino").css("height",parcelas[0].imagen.height+150)
+                if (!(contadorZoom > 1)) {
+                        $("#aquiVanLosCanvas").css("width",parcelas[0].imagen.width)
+                        $("#aquiVanLosCanvas").css("height",parcelas[0].imagen.height)
+                }
+                
+                $("#padreAquiVanLosCanvas").css("width",parcelas[0].imagen.width)
+                $("#padreAquiVanLosCanvas").css("height",parcelas[0].imagen.height)
+
+
+                $('#audio').removeClass('imagenRellena');
+                $('#audio').attr('onclick','');
+                $('#video').removeClass('imagenRellena');
+                $('#video').attr('onclick','');
+                $('#imagen').removeClass('imagenRellena');
+                $('#imagen').attr('onclick','');
+                $('#documento').removeClass('imagenRellena');
+                $('#documento').attr('onclick','');
+            }
+
+            function verificarClick(event) 
+            {
+                $('#audio').removeClass('imagenRellena');
+                $('#audio').attr('onclick','');
+                $('#video').removeClass('imagenRellena');
+                $('#video').attr('onclick','');
+                $('#imagen').removeClass('imagenRellena');
+                $('#imagen').attr('onclick','');
+                $('#documento').removeClass('imagenRellena');
+                $('#documento').attr('onclick','');
+
+                var rect = document.getElementById("padreAquiVanLosCanvas").getBoundingClientRect(); 
+                var x = (event.x - rect.left - parseFloat($("#aquiVanLosCanvas").css("left")));
+                var y = (event.y - rect.top - parseFloat($("#aquiVanLosCanvas").css("top")));
+                console.log("click en " + x + " x " + y)
+                console.log(parseFloat($("#aquiVanLosCanvas").css("width")))
+                var audioRelleno = false;
+                var videoRelleno = false;
+                var documentoRelleno = false;
+                var imagenRelleno = false;
+
+                for (let i=0; i<parcelas.length; i++) 
+                {
+                        if (parcelas[i].ctx.getImageData(x, y, parcelas[i].canvas.width, parcelas[i].canvas.height).data[3] != 0 && parcelas[i].canvas.style.opacity != "0") {
+
+                            //Mostramos el popup
+                            $("#popup").slideUp(100);
+                            setTimeout(function() {
+                                $("#popup .titulo").html(parcelas[i].nombre)
+                                $("#popup .descripcion").html(parcelas[i].descripcion)
+                                $("#popup").css("left",event.x)
+                                $("#popup").css("top",event.y-65+window.scrollY);
+                                $("#popup").slideDown(150);
+                            },100)
+                            
+
+                            for (let j = 0; j < parcelas[i].multimedia.length; j++) {
+                                if (parcelas[i].multimedia[j].tipo == 'audio' && !audioRelleno) {
+                                    audioRelleno = true;
+                                    $('#audio').addClass('imagenRellena');
+                                    $('#audio').attr('data-parcela',parcelas[i].id)
+                                    $('#audio').attr('onclick','sacarAudioParcela(this.dataset.parcela)');
+                                } else if (parcelas[i].multimedia[j].tipo == 'video' && !videoRelleno) {
+                                    videoRelleno = true;
+                                    $('#video').addClass('imagenRellena');
+                                    $('#video').attr('data-parcela',parcelas[i].id)
+                                    $('#video').attr('onclick','sacarVideoParcela(this.dataset.parcela)');
+                                } else if (parcelas[i].multimedia[j].tipo == 'imagen' && !imagenRelleno) {
+                                    imagenRelleno = true;
+                                    $('#imagen').addClass('imagenRellena');
+                                    $('#imagen').attr('data-parcela',parcelas[i].id);
+                                    $('#imagen').attr('onclick','sacarImgParcela(this.dataset.parcela)');
+                                } else if (parcelas[i].multimedia[j].tipo == 'documento' && !documentoRelleno) {
+                                    documentoRelleno = true;
+                                    $('#documento').addClass('imagenRellena');
+                                    $('#documento').attr('data-parcela',parcelas[i].id);
+                                    $('#documento').attr('onclick','sacarDocParcela(this.dataset.parcela)');
+                                }
+                            }
+
+                        }
+                }
+
+                    /*for (let i = 0; i < parcelas[data-parcela].multimedia.length; i++) {
+                    HAY QUE RECORRER TODAS LAS PARCELAS PARA SABER CUAL TIENE EL ID DATA-PARCELA
+                }*/
+            }
+
+
+            function sacarAudioParcela(id) 
+            {
+		$("#modal").attr("style","width: 700px");
+                $("#popup").slideUp(200);
+                $("#modal").html('<h3 class="tituloModal"></h3> \
+                                <div id="cerrarPopup" onclick="cerrarModal()"> \
+                                    <div id="equis" class="equis1"></div> \
+                                    <div id="equis" class="equis2"></div> \
+                                </div>')
+
+                for (i=0; i<parcelas.length; i++) 
+                {
+                        if (parcelas[i].id == id) 
+                        {
+                            $(".tituloModal").text("Audios de '" + parcelas[i].nombre + "'");
+                            for (j=0; j<parcelas[i].multimedia.length; j++) 
+                            {
+                                if (parcelas[i].multimedia[j].tipo == "audio") 
+                                {
+                                	$("#modal").html($("#modal").html() +  "<span style='font-weight: 200; color: black; margin-top: 20px; display: inline-block;'>" + parcelas[i].multimedia[j].titulo + "</span><audio style='margin-top: 10px; width: 100%; outline: none;' src='" + parcelas[i].multimedia[j].url.src + "' controls>")
+                                }
+                            }
+                        }
+                }
+
+                $("#fondo").fadeIn(200);
+                $("#modal").fadeIn(200);
+                }
+                
+            function sacarVideoParcela(id) 
+            {
+		$("#modal").attr("style","width: 700px;");
+                var contador = 0;
+                $("#popup").slideUp(200);
+                $("#modal").html('<h3 class="tituloModal"></h3> \
+                                <div id="cerrarPopup" onclick="cerrarModal()"> \
+                                    <div id="equis" class="equis1"></div> \
+                                    <div id="equis" class="equis2"></div> \
+                                </div>')
+
+                for (i=0; i<parcelas.length; i++) 
+                {
+                        if (parcelas[i].id == id) 
+                        {
+                            $(".tituloModal").text("Vídeos de '" + parcelas[i].nombre + "'");
+                            for (j=0; j<parcelas[i].multimedia.length; j++) 
+                            {
+                                if (parcelas[i].multimedia[j].tipo == "video") 
+                                {
+                                    if (contador % 2 == 0) {
+                                            $("#modal").html($("#modal").html() + "<video controls style='margin-top: 10px; width: 48%; margin-right: 4%; outline: none;' src='" + parcelas[i].multimedia[j].url.src + "'>")
+                                    } else {
+                                            $("#modal").html($("#modal").html() + "<video controls style='margin-top: 10px; width: 48%;outline: none;' src='" + parcelas[i].multimedia[j].url.src + "'>")
+                                    }
+                                    
+                                    contador = contador+1;
+                                }
+                            }
+                        }
+                }
+
+                $("#fondo").fadeIn(200);
+                $("#modal").fadeIn(200);
+                }
+
+            function sacarImgParcela(id) 
+            {
+		$("#modal").attr("style","width: 700px");
+                $("#popup").slideUp(200);
+                $("#modal").html('<h3 class="tituloModal"></h3> \
+                                <div id="cerrarPopup" onclick="cerrarModal()"> \
+                                    <div id="equis" class="equis1"></div> \
+                                    <div id="equis" class="equis2"></div> \
+                                </div>')
+
+                for (i=0; i<parcelas.length; i++) 
+                {
+                        if (parcelas[i].id == id) 
+                        {
+                            $(".tituloModal").text("Imágenes de '" + parcelas[i].nombre + "'");
+                            for (j=0; j<parcelas[i].multimedia.length; j++) 
+                            {
+                                if (parcelas[i].multimedia[j].tipo == "imagen") 
+                                {
+                                    $("#modal").html($("#modal").html() + "<div class='imgMulti'><figure><img src='" + parcelas[i].multimedia[j].url.src + "' onclick='ponerImagen(\""+ parcelas[i].multimedia[j].url.src +"\")'><figcaption style='color: black; font-weight: 100; font-size: 12px;'>"+ parcelas[i].multimedia[j].titulo +"</figcaption></figure></div>")
+                                }
+                            }
+                        }
+                }
+
+                $("#fondo").fadeIn(200);
+                $("#modal").fadeIn(200);
+            }
+
+	    function sacarDocParcela(id) 
+            {
+                $("#popup").slideUp(200);
+		$("#modal").attr("style","width: auto");
+                $("#modal").html('<h3 class="tituloModal"></h3> \
+                                <div id="cerrarPopup" onclick="cerrarModal()"> \
+                                    <div id="equis" class="equis1"></div> \
+                                    <div id="equis" class="equis2"></div> \
+                                </div>')
+
+                for (i=0; i<parcelas.length; i++) 
+                {
+                        if (parcelas[i].id == id) 
+                        {
+                            $(".tituloModal").text("Documentos de '" + parcelas[i].nombre + "'");
+                            for (j=0; j<parcelas[i].multimedia.length; j++) 
+                            {
+                                if (parcelas[i].multimedia[j].tipo == "documento") 
+                                {
+                                    $("#modal").html($("#modal").html() + "<li><a style='display: inline-block; padding-left: 10px; padding-right: 10px;' target='_blank' href='" + parcelas[i].multimedia[j].url + "'>" + parcelas[i].multimedia[j].titulo +"</a></li>")
+                                }
+                            }
+                        }
+                }
+
+                $("#fondo").fadeIn(200);
+                $("#modal").fadeIn(200);
+            }
+
+
+            function ponerImagen(src) 
+            {
+                 $("#modalImg").css("background-image","url("+src+")")
+                                $("#modalImgExternal").attr("onclick","window.open('"+src+"','_blank');")
+                $("#modalImg").slideDown(200);
+            }
+
+            function cerrarModal() 
+            {
+                $("#modal").fadeOut(200);
+                $("#fondo").fadeOut(200);
+
+                $('audio,video').each(function(){
+                        this.pause();
+                });
+
+            }
+
+            function mostrarFondo() 
+            {
+                if (oculto) {
+                        $("#fondoCanvas").css("opacity","0.6");
+                        $("#mapitaEsquina").css("text-shadow","0px 0px 10px gold");
+                        oculto = false;
+                } else {
+                        $("#fondoCanvas").css("opacity","0");
+                        $("#mapitaEsquina").css("text-shadow","none");
+                        oculto = true;
+                }
+                
+            }
+
+
+            function volverAtras() {
+                location.href="index.html";
+            }
+
+            function ocultarMostrarParcelas()
+            {
+                if (parcelasOcultas) {
+                        for (i=0; i<parcelas.length; i++) {
+                            parcelas[i].canvas.style.display = "block";
+                            $("#ojito").css("opacity","1");
+                        }
+                        parcelasOcultas = false;
+                } else {
+                        for (i=0; i<parcelas.length; i++) {
+                            parcelas[i].canvas.style.display = "none";
+                            $("#ojito").css("opacity","0.7");
+                        }
+                        parcelasOcultas = true;
+                }
+            }
+
+            function cerrarPopup() {
+                $('#audio').removeClass('imagenRellena');
+                $('#audio').attr('onclick','');
+                $('#video').removeClass('imagenRellena');
+                $('#video').attr('onclick','');
+                $('#imagen').removeClass('imagenRellena');
+                $('#imagen').attr('onclick','');
+                $('#popup').slideUp(100)
+            }
+
+
+            //FUNCIONES DEL ZOOM
+            function zoomIn() {
+                if (contadorZoom < 2) {
+
+                        contadorZoom = contadorZoom + 0.1;
+                        $("#aquiVanLosCanvas").css("width", parseFloat($("#aquiVanLosCanvas").css("width")) * 1.1)
+                        $("#aquiVanLosCanvas").css("height", parseFloat($("#aquiVanLosCanvas").css("height")) * 1.1)
+                        $("#fondoCanvas").css("transition","0s")
+                        $("#fondoCanvas").css("width", parseFloat($("#fondoCanvas").css("width")) * 1.1)
+                        $("#fondoCanvas").css("height", parseFloat($("#fondoCanvas").css("height")) * 1.1)
+                        $("#fondoCanvas").css("transition","0.3s")
+
+                        for (i=0; i<parcelas.length; i++) {
+                            parcelas[i].ctx.scale(1.1,1.1);
+                        }
+                        mapear($("#sliderAnyos").val());
+                        
+                }
+            }
+            function zoomOut() {
+                if (contadorZoom > 1) {
+                        
+                        contadorZoom = contadorZoom - 0.1;
+                        $("#aquiVanLosCanvas").css("width", parseInt(parseFloat($("#aquiVanLosCanvas").css("width")) / 1.1))
+                        $("#aquiVanLosCanvas").css("height", parseInt(parseFloat($("#aquiVanLosCanvas").css("height")) / 1.1))
+                        $("#fondoCanvas").css("transition","0s")
+                        $("#fondoCanvas").css("width", parseInt(parseFloat($("#fondoCanvas").css("width")) / 1.1))
+                        $("#fondoCanvas").css("height", parseInt(parseFloat($("#fondoCanvas").css("height")) / 1.1))
+                        $("#fondoCanvas").css("transition","0.3s")
+
+
+                        for (i=0; i<parcelas.length; i++) {
+                            parcelas[i].ctx.scale(1.1,1.1);
+                        }
+                        mapear($("#sliderAnyos").val());
+                }
+            }
+
+            var velocidad = 150;
+
+            function verPelicula() {
+                $("#textoPelicula").text("Parar película");
+                $("#spanQueReproduce, #spanQueReproduce span").css("text-shadow","none");
+                $("#spanQueReproduce i").removeClass("fa fa-play");
+                $("#spanQueReproduce i").addClass("fa fa-stop");
+
+                var funcionPeli = function() {
+                        clearInterval(peli);
+                        console.log("setinetrval")
+                        if (anyo<=anyo_maximo) {
+                            peli = setInterval(funcionPeli,velocidad)
+                            $("#sliderAnyos").val(anyo);
+                            mapear(anyo)
+                        } else {
+                            clearInterval(peli)
+                            $("#spanQueReproduce").attr("onclick","verPelicula()")
+                            $("#spanQueReproduce i").removeClass("fa fa-stop");
+                            $("#spanQueReproduce i").addClass("fa fa-play");
+                            $("#textoPelicula").text("Ver película");
+                        }
+                        anyo++;
+                }
+
+                var anyo = anyo_minimo;
+                $("#spanQueReproduce").attr("onclick","detenerPelicula()")
+                peli = setInterval(funcionPeli,velocidad)
+            }
+
+            function detenerPelicula() {
+                $("#spanQueReproduce, #spanQueReproduce span").css("text-shadow","gold 0px 0px 10px");
+                $("#spanQueReproduce").attr("onclick","verPelicula()")
+                $("#spanQueReproduce i").removeClass("fa fa-stop");
+                $("#spanQueReproduce i").addClass("fa fa-play");
+                $("#textoPelicula").text("Ver película");
+                clearInterval(peli);
+            }
+        
+        //console.log(xml.getElementsByTagName("zona")[0].getElementsByTagName("nombre")[0].innerHTML)
 
     </script>
 
@@ -94,127 +733,222 @@
 
     <nav>
         <div class="logo">
-            <a href="#">Almería Interactiva</a>
+            <a href="index.html" id="tituloNav">Almería Interactiva</a>
         </div>
     </nav>
+    
+    
+    
+    
+    
+    
+    
 
-    <div id="video-container">
-        <div class="video-overlay"></div>
-        <div class="video-content">
-            <div class="inner">
-              <h1>ALMERIA INTERACTIVA</h1>
-              <p style="font-weight: bold">Planos históricos de la provincia</p>
-              <p>Conoce en detalle cada rincón y su historia con nosotros</p>
-                <div class="scroll-icon">
-                    <a class="scrollTo" data-scrollTo="portfolio" href="#"><img src="resources/img/principal/scroll-icon.png" alt="" style="outline: none"></a>
-                </div>    
+    <div id="pantalla-principal" style="width: 100%; height: 100%">
+            <div id="video-container">
+                <div class="video-overlay"></div>
+                <div class="video-content">
+                    <div class="inner">
+                    <h1>ALMERIA INTERACTIVA</h1>
+                    <p style="font-weight: bold">Planos históricos de la provincia</p>
+                    <p>Conoce en detalle cada rincón y su historia con nosotros</p>
+                        <div class="scroll-icon">
+                            <a class="scrollTo" data-scrollTo="portfolio" href="#"><img src="resources/img/principal/scroll-icon.png" alt="" style="outline: none"></a>
+                        </div>    
+                    </div>
+                </div>
+                <video autoplay loop muted>
+                    <source src="resources/img/principal/video-principal.mp4" type="video/mp4" />
+                    <source src="resources/img/principal/video-principal.webm" type="video/webm" />
+                </video>
+            </div>
+
+        
+
+            <div class="full-screen-portfolio" id="portfolio">
+                <div class="container-fluid" id="container-zonas">
+
+                <!--
+                    @foreach ($zonas as $zona)
+                <div class="col-md-4 col-sm-6">
+                        <div class="portfolio-item">
+                            <a href="{{ route('zona.show',$zona->id) }}">
+                            <div class="thumb">
+                                <div class="hover-effect">
+                                    <div class="hover-content">
+                                            <h1>{{ $zona->nombre }}</h1>
+
+                                    </div>
+                                </div>
+                                <div class="image">
+                                    <img src="{{ asset('img/zonas/'.$zona->imagen) }}" style="object-fit: cover;height:600px">
+                                </div>
+                            </div>
+                            </a>
+                        </div>
+                </div>
+                @endforeach
+                -->
+
             </div>
         </div>
-        <video autoplay loop muted>
-        	<source src="resources/img/principal/video-principal.mp4" type="video/mp4" />
-        </video>
     </div>
 
-   
 
-    <div class="full-screen-portfolio" id="portfolio">
-        <div class="container-fluid">
+    
+    <div id="pantalla-zonas" style="display: none; width: 100%; height: 100%">
 
-        <!--
-             @foreach ($zonas as $zona)
-               <div class="col-md-4 col-sm-6">
-                    <div class="portfolio-item">
-                         <a href="{{ route('zona.show',$zona->id) }}"><div class="thumb">
-                              <div class="hover-effect">
-                                   <div class="hover-content">
-                                        <h1>{{ $zona->nombre }}</h1>
+    <div onclick="volverAtras()" style="position: fixed;
+        width: 80px;
+        left: -20px;
+        top: -2px;
+        cursor: pointer;
+        opacity: 1;
+        font-size: 25px;
+        text-align: center;
+        z-index:400">
+              <i style="transition: 0.5s all; top: 8px; position: relative;" id="flechaAtras" class="fa fa-chevron-left" aria-hidden="true"></i>
+        </div>
+     <div onclick="mostrarFondo()" style="position: fixed;
+    width: 80px;
+    right: 10px;
+    top: 0px;
+    cursor: pointer;
+    opacity: 1;
+    font-size: 25px;
+    text-align: center;
+    z-index:400">
+          <i style="position: absolute;
+    font-size: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 2px;" class="fa fa-map-marker" aria-hidden="true"></i>
+          <i style="transition: 0.5s all; top: 8px; position: relative;" id="mapitaEsquina" class="fa fa-map-o" aria-hidden="true"></i>
+    </div>
+
+    <div onmouseover="ocultarMostrarParcelas()" onmouseout="ocultarMostrarParcelas()" style="position: fixed;
+    width: 80px;
+    right: 56px;
+    top: 0px;
+    cursor: pointer;
+    opacity: 1;
+    font-size: 30px;
+    text-align: center;
+    z-index: 400">
+          <i id="ojito" class="fa fa-eye" aria-hidden="true"></i>
+    </div>
+
+     <div id="fondo"></div>
+     <div id="modal">
+          
+     </div>
+
+     <div id="modalImg">
+          <div id="cerrarPopupImg" onclick="$('#modalImg').slideUp(200)">
+               <div id="equisImg" class="equis1"></div>
+               <div id="equisImg" class="equis2"></div>
+          </div>
+          <i id="modalImgExternal" class="fa fa-external-link" aria-hidden="true" style="position: absolute; font-size: 25px; font-weight: 700; left: 15px; top: 15px; cursor: pointer;"></i>
+     </div>
+
+     <div id="popup">
+          <div id="pestanyitaPopup"></div>
+          <div id="cerrarPopup" onclick="cerrarPopup();">
+               <div id="equis" class="equis1"></div>
+               <div id="equis" class="equis2"></div>
+          </div>
+          <div class="titulo"></div>
+          <div class="descripcion"></div>
+     </div>
+
+
+
+     <div class="fondoLogo">
+          <div class="logo logo_loading">
+               <div class="logo__inner"></div>
+               <div class="logo__text">LOADING</div>
+          </div>
+     </div>
+
+     <div onclick="zoomIn()" style="position: fixed;
+    width: 80px;
+    right: 98px;
+    top: 0px;
+    cursor: pointer;
+    opacity: 1;
+    font-size: 30px;
+    text-align: center;
+    z-index:400">
+         <i class="fa fa-search-plus" aria-hidden="true"></i>
+    </div>
+    <div onclick="zoomOut()" style="position: fixed;
+    width: 80px;
+    right: 138px;
+    top: 0px;
+    cursor: pointer;
+    opacity: 1;
+    font-size: 30px;
+    text-align: center;
+    z-index: 400;">
+         <i class="fa fa-search-minus" aria-hidden="true"></i>
+    </div>
+
+     <div id="content" style="height: 100vh">
+          <a href="index.html">
+          </a>
+          <div class="fondo_imagen"></div>
+          <div class="fondo_negro"></div>
+          <div class="pergamino">
+               <table class="tablaGeneral">
+                    <tr>
+                         <td rowspan="4">
+                              <div id="padreAquiVanLosCanvas" style="overflow: hidden">
+                                   <div id="aquiVanLosCanvas" style="zoom:1">
 
                                    </div>
                               </div>
-                              <div class="image">
-                                   <img src="{{ asset('img/zonas/'.$zona->imagen) }}" style="object-fit: cover;height:600px">
+                         </td>
+                         <td class="lateral">
+                              <i id="video" class="fa fa-video-camera imagenMultimedia imagenVacia " aria-hidden="true"></i>
+                         </td>
+                    </tr>
+                    <tr>
+                         <td class="lateral">
+                              <i id="imagen" class="fa fa-camera imagenMultimedia imagenVacia" aria-hidden="true"></i>
+                         </td>
+                    </tr>
+                    <tr>
+                         <td class="lateral">
+                              <i id="audio" class="fa fa-microphone imagenMultimedia imagenVacia" aria-hidden="true"></i>
+                         </td>
+                    </tr>
+                    <tr>
+                        <td class="lateral">
+                             <i id="documento" class="fa fa-file imagenMultimedia imagenVacia" aria-hidden="true"></i>
+                        </td>
+                   </tr>
+                    <tr>
+                         <td colspan="2">
+                              <div id="slider">
+                                   
+                                   <input type="range" id="sliderAnyos" step="1" oninput="mapear(this.value)"><br>
+                                   <span id="anyoMinimoLabel" style="position: absolute;margin-top: -45px;left: -50px; font-weight: 700;"></span>
+                                   <span id="anyoMaximoLabel" style="position: absolute;margin-top: -45px;left: calc(100% + 20px); font-weight: 700;"></span>
+                                   <div style="position: relative" id="anyoSlider"></div>
+                                   <div class="divPelicula">
+                                        <div id="velocidadesPelicula" style="position: relative;display: inline;user-select: none;font-size: 18px; top: -6px;right: 5px;text-shadow: red 0px 0px 12px">x1</div>
+                                        <span id="spanQueReproduce" onclick="verPelicula()"><i class="fa fa-play" aria-hidden="true"></i>
+                                    <span id="textoPelicula" style="font-size: 20px; color:white; font-weight: 700;top: -7px;position:relative;left: 5px;">Ver película</span></span>
+                                    </div>
                               </div>
-                         </div></a>
-                    </div>
-               </div>
-             @endforeach
-             -->
-
-        </div>
-    </div>
-
-
-    <footer>
-        <div class="container-fluid">
-            <div class="col-md-12">
-                <p>2021 Paolo y Rubén
-    
-    | Designed by TemplateMo</p>
-            </div>
-        </div>
-    </footer>
-
-
-      <!-- Modal button -->
-    
-
-    <!-- Modal -->
-    <div id="modal" class="modal">
-      <!-- Modal Content -->
-      <div class="modal-content">
-        <!-- Modal Header -->
-        <div class="modal-header">
-          <h3 class="header-title">Say hello to <em>Highway</em></h3>
-          <div class="close-btn"><img src="resources/img/principal/close_contact.png" alt=""></div>    
-        </div>
-        <!-- Modal Body -->
-        <div class="modal-body">
-          <div class="col-md-6 col-md-offset-3">
-            <form id="contact" action="" method="post">
-                <div class="row">
-                    <div class="col-md-12">
-                      <fieldset>
-                        <input name="name" type="text" class="form-control" id="name" placeholder="Your name..." required>
-                      </fieldset>
-                    </div>
-                    <div class="col-md-12">
-                      <fieldset>
-                        <input name="email" type="email" class="form-control" id="email" placeholder="Your email..." required>
-                      </fieldset>
-                    </div>
-                    <div class="col-md-12">
-                      <fieldset>
-                        <textarea name="message" rows="6" class="form-control" id="message" placeholder="Your message..." required></textarea>
-                      </fieldset>
-                    </div>
-                    <div class="col-md-12">
-                      <fieldset>
-                        <button type="submit" id="form-submit" class="btn">Send Message Now</button>
-                      </fieldset>
-                    </div>
-                </div>
-            </form>
+                              
+                         </td>
+                    </tr>
+               </table>
           </div>
-        </div>
-      </div>
-    </div>
-
+     </div>
     
-    <!--
-    <section class="overlay-menu">
-      <div class="container">
-        <div class="row">
-          <div class="main-menu">
-              <ul>
-                  <li>
-                      <a href="#">Inicio</a>
-                  </li>
-              </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-    -->
+    </div>
 
     
     <script>window.jQuery || document.write('<script src="resources/js/vendor/jquery-1.11.2.min.js"><\/script>')</script>
